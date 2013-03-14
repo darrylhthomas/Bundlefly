@@ -1,0 +1,3 @@
+[submodule "Bundlefly/vendor/NSBundle-ProxyBundle"]
+	path = Bundlefly/vendor/NSBundle-ProxyBundle
+	url = https://github.com/darrylhthomas/NSBundle-ProxyBundle.git
