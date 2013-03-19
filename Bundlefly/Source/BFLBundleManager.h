@@ -1,5 +1,5 @@
 //
-//  BFLBundlesViewController.h
+//  BFLBundleManager.h
 //  Bundlefly
 //
 //  Created by Darryl H. Thomas on 3/13/13.
@@ -31,24 +31,22 @@
 // The functionality provided by NSBundle+ProxyBundle is accomplished through
 // the use of runtime hacks and should be considered very fragile.
 
-#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
 
-@protocol BFLBundlesViewControllerDelegate;
+@class BFLFileSystemNodeReconciliationResult;
 
-@interface BFLBundlesViewController : UITableViewController
+@interface BFLBundleManager : NSObject
 
-@property (nonatomic, copy) NSString *selectedBundleName;
-@property (nonatomic, copy) NSArray *bundles;
-@property (nonatomic, weak) id<BFLBundlesViewControllerDelegate> delegate;
+@property (nonatomic, strong, readonly) NSURL *rootURL;
+@property (nonatomic, copy, readonly) NSArray *bundles;
 
-- (void)addBundle:(NSDictionary *)bundle;
-- (void)removeBundle:(NSDictionary *)bundle;
+- (id)initWithRootURL:(NSURL *)rootURL;
 
-@end
+- (void)reconcileBundleWithName:(NSString *)bundleName againstRemoteURL:(NSURL *)remoteURL queue:(NSOperationQueue *)completionQueue completion:(void(^)(BFLFileSystemNodeReconciliationResult *result, NSError *error))completionBlock;
 
-@protocol BFLBundlesViewControllerDelegate <NSObject>
+- (void)synchronizeBundleNamed:(NSString *)bundleName queue:(NSOperationQueue *)completionQueue completion:(void(^)(BOOL finished, NSURL *remoteURL, NSError *error))completionBlock;
 
-- (void)bundlesViewController:(BFLBundlesViewController *)controller didSelectBundleWithName:(NSString *)bundleName;
-- (void)bundlesViewcontroller:(BFLBundlesViewController *)controller didDeleteBundleWithName:(NSString *)bundleName;
+- (void)selectBundleWithName:(NSString *)bundleName;
+- (void)deleteBundleWithName:(NSString *)bundleName;
 
 @end

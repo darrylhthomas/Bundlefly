@@ -33,11 +33,7 @@
 
 #import "BFLSettingsViewController.h"
 
-NSString const * BFLServiceNameSettingsKey = @"BFLServiceNameSettings";
 
-@interface BFLSettingsViewController ()
-
-@end
 
 @implementation BFLSettingsViewController
 
@@ -46,104 +42,126 @@ NSString const * BFLServiceNameSettingsKey = @"BFLServiceNameSettings";
     self = [super initWithStyle:style];
     if (self) {
         self.title = NSLocalizedString(@"Settings", nil);
-        self.tabBarItem = [[UITabBarItem alloc] initWithTitle:NSLocalizedString(@"Settings", nil) image:nil tag:3];
+        self.tabBarItem = [[UITabBarItem alloc] initWithTitle:NSLocalizedString(@"Settings", nil) image:[UIImage imageNamed:@"bundlefly_settings_tabbar_item"] tag:3];
+        
     }
     return self;
 }
 
-- (void)viewDidLoad
+- (void)dealloc
 {
-    [super viewDidLoad];
-
-    // Uncomment the following line to preserve selection between presentations.
-    // self.clearsSelectionOnViewWillAppear = NO;
- 
-    // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (void)didReceiveMemoryWarning
+- (void)viewDidAppear:(BOOL)animated
 {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
-
-#pragma mark - Table view data source
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-#warning Potentially incomplete method implementation.
-    // Return the number of sections.
-    return 0;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-#warning Incomplete method implementation.
-    // Return the number of rows in the section.
-    return 0;
-}
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    static NSString *CellIdentifier = @"Cell";
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier forIndexPath:indexPath];
+    [super viewDidAppear:animated];
     
-    // Configure the cell...
+    NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+    [notificationCenter addObserver:self selector:@selector(handleKeyboardNotification:) name:UIKeyboardWillShowNotification object:nil];
+    [notificationCenter addObserver:self selector:@selector(handleKeyboardNotification:) name:UIKeyboardWillHideNotification object:nil];
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
     
-    return cell;
+    [super viewWillDisappear:animated];
 }
 
-/*
-// Override to support conditional editing of the table view.
-- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
+- (void)handleKeyboardNotification:(NSNotification *)notification
 {
-    // Return NO if you do not want the specified item to be editable.
-    return YES;
+    CGRect keyboardFrameEnd = [self.view.window convertRect:[[notification userInfo][UIKeyboardFrameEndUserInfoKey] CGRectValue] toView:self.tableView];
+    
+    CGFloat destinationMinY = MIN(CGRectGetMinY(keyboardFrameEnd), CGRectGetMaxY(self.tableView.bounds));
+    CGFloat bottomInset = CGRectGetMaxY(self.tableView.bounds) - destinationMinY;
+    
+    NSTimeInterval duration = [[notification userInfo][UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    [UIView animateWithDuration:duration animations:^{
+        self.tableView.contentInset = UIEdgeInsetsMake(0, 0, bottomInset, 0);
+    }];
 }
-*/
 
-/*
-// Override to support editing the table view.
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+@end
+
+#pragma mark -
+
+@implementation BFLTextFieldTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        // Delete the row from the data source
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-    }   
-    else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-    }   
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        _textField = [[UITextField alloc] initWithFrame:CGRectZero];
+        _textField.returnKeyType = UIReturnKeyDone;
+        
+        [self.contentView addSubview:_textField];
+    }
+    
+    return self;
 }
-*/
 
-/*
-// Override to support rearranging the table view.
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+- (void)layoutSubviews
 {
+    [super layoutSubviews];
+    
+    CGRect contentBounds = self.contentView.bounds;
+    CGFloat labelWidthAllotment = roundf(contentBounds.size.width / 2.0f);
+
+    CGRect rect = self.textLabel.frame;
+    rect.size.width = labelWidthAllotment - rect.origin.x;
+    self.textLabel.frame = rect;
+    
+    [self.textField sizeToFit];
+    rect = self.textField.frame;
+    rect.origin.x = labelWidthAllotment;
+    rect.origin.y = (contentBounds.size.height - rect.size.height) / 2.0f;
+    rect.size.width = contentBounds.size.width - labelWidthAllotment - self.textLabel.frame.origin.x;
+    self.textField.frame = rect;
 }
-*/
 
-/*
-// Override to support conditional rearranging of the table view.
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
+- (void)prepareForReuse
 {
-    // Return NO if you do not want the item to be re-orderable.
-    return YES;
+    [super prepareForReuse];
+    
+    self.textField.text = nil;
+    self.textField.placeholder = nil;
 }
-*/
 
-#pragma mark - Table view delegate
+@end
 
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+#pragma mark -
+
+@implementation BFLSwitchTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
-    // Navigation logic may go here. Create and push another view controller.
-    /*
-     <#DetailViewController#> *detailViewController = [[<#DetailViewController#> alloc] initWithNibName:@"<#Nib name#>" bundle:nil];
-     // ...
-     // Pass the selected object to the new view controller.
-     [self.navigationController pushViewController:detailViewController animated:YES];
-     */
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        _switchControl = [[UISwitch alloc] initWithFrame:CGRectZero];
+        
+        [self.contentView addSubview:_switchControl];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    CGRect contentBounds = self.contentView.bounds;
+    CGFloat labelWidthAllotment = roundf(contentBounds.size.width / 2.0f);
+    
+    CGRect rect = self.textLabel.frame;
+    rect.size.width = labelWidthAllotment - rect.origin.x;
+    self.textLabel.frame = rect;
+    
+    [self.switchControl sizeToFit];
+    rect = self.switchControl.frame;
+    rect.origin.x = CGRectGetMaxX(contentBounds) - rect.size.width - self.textLabel.frame.origin.x;
+    rect.origin.y = (contentBounds.size.height - rect.size.height) / 2.0f;
+    self.switchControl.frame = rect;
 }
 
 @end

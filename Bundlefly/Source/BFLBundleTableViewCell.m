@@ -1,5 +1,5 @@
 //
-//  BFLBundlesViewController.h
+//  BFLBundleTableViewCell.m
 //  Bundlefly
 //
 //  Created by Darryl H. Thomas on 3/13/13.
@@ -31,24 +31,55 @@
 // The functionality provided by NSBundle+ProxyBundle is accomplished through
 // the use of runtime hacks and should be considered very fragile.
 
-#import <UIKit/UIKit.h>
+#import "BFLBundleTableViewCell.h"
 
-@protocol BFLBundlesViewControllerDelegate;
+@implementation BFLBundleTableViewCell
+{
+    UIActivityIndicatorView *_activityIndicator;
+    UIImageView *_statusImageView;
+}
 
-@interface BFLBundlesViewController : UITableViewController
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:reuseIdentifier];
+    if (self) {
+        _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        
+        _statusImageView = [[UIImageView alloc] initWithFrame:_activityIndicator.frame];
+    }
+    return self;
+}
 
-@property (nonatomic, copy) NSString *selectedBundleName;
-@property (nonatomic, copy) NSArray *bundles;
-@property (nonatomic, weak) id<BFLBundlesViewControllerDelegate> delegate;
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+{
+    [super setSelected:selected animated:animated];
 
-- (void)addBundle:(NSDictionary *)bundle;
-- (void)removeBundle:(NSDictionary *)bundle;
+    // Configure the view for the selected state
+}
 
-@end
+- (void)prepareForReuse
+{
+    [super prepareForReuse];
+    
+    [self hideActivityIndicator];
+    _statusImageView.image = nil;
+}
 
-@protocol BFLBundlesViewControllerDelegate <NSObject>
+- (void)showActivityIndicator
+{
+    [_activityIndicator startAnimating];
+    self.accessoryView = _activityIndicator;
+}
 
-- (void)bundlesViewController:(BFLBundlesViewController *)controller didSelectBundleWithName:(NSString *)bundleName;
-- (void)bundlesViewcontroller:(BFLBundlesViewController *)controller didDeleteBundleWithName:(NSString *)bundleName;
+- (void)hideActivityIndicator
+{
+    [_activityIndicator stopAnimating];
+    self.accessoryView = _statusImageView;
+}
+
+- (void)setStatusImage:(UIImage *)image
+{
+    _statusImageView.image = image;
+}
 
 @end

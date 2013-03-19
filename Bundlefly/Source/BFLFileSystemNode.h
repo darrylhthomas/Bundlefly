@@ -1,5 +1,5 @@
 //
-//  BFLBundlesViewController.h
+//  BFLFileSystemNode.h
 //  Bundlefly
 //
 //  Created by Darryl H. Thomas on 3/13/13.
@@ -31,24 +31,42 @@
 // The functionality provided by NSBundle+ProxyBundle is accomplished through
 // the use of runtime hacks and should be considered very fragile.
 
-#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
 
-@protocol BFLBundlesViewControllerDelegate;
+typedef NS_ENUM(NSUInteger, BFLFileSystemNodeComparisonResult) {
+    BFLFileSystemNodeUnknownComparison,
+    BFLFileSystemNodesAreEqualComparison,
+    BFLFileSystemNodesDifferComparison,
+    BFLFileSystemNodeIsMissingLocallyComparison,
+    BFLFileSystemNodeIsMissingRemotelyComparison,
+};
 
-@interface BFLBundlesViewController : UITableViewController
+@interface BFLFileSystemNodeReconciliationResult : NSObject
 
-@property (nonatomic, copy) NSString *selectedBundleName;
-@property (nonatomic, copy) NSArray *bundles;
-@property (nonatomic, weak) id<BFLBundlesViewControllerDelegate> delegate;
-
-- (void)addBundle:(NSDictionary *)bundle;
-- (void)removeBundle:(NSDictionary *)bundle;
+@property (strong, readonly) NSURL *localURL;
+@property (strong, readonly) NSURL *remoteURL;
+@property (assign, readonly) BFLFileSystemNodeComparisonResult comparisonResult;
+@property (copy, readonly) NSArray *children;
 
 @end
 
-@protocol BFLBundlesViewControllerDelegate <NSObject>
+@interface BFLFileSystemNode : NSObject
 
-- (void)bundlesViewController:(BFLBundlesViewController *)controller didSelectBundleWithName:(NSString *)bundleName;
-- (void)bundlesViewcontroller:(BFLBundlesViewController *)controller didDeleteBundleWithName:(NSString *)bundleName;
+@property (strong, readonly) NSURL *url;
+@property (copy, readonly) NSString *displayName;
+@property (copy, readonly) NSArray *children;
+@property (assign, readonly) BOOL isDirectory;
+@property (copy, readonly) NSString *md5String;
+@property (assign, readonly) NSUInteger fileSize;
+
+- (id)initWithFileURL:(NSURL *)fileURL;
+- (void)invalidateChildren;
+- (NSDictionary *)dictionaryRepresentation;
+- (NSDictionary *)dictionaryRepresentationWithBaseURL:(NSURL *)baseURL;
+- (BFLFileSystemNode *)nodeAtRelativePath:(NSString *)nodePath;
+- (BFLFileSystemNode *)childWithFilename:(NSString *)childName;
+- (NSString *)abbreviatedPathWithInitialLetters;
+
+- (BFLFileSystemNodeReconciliationResult *)reconcileAgainstDictionaryRepresentation:(NSDictionary *)otherNodeRepresentation;
 
 @end

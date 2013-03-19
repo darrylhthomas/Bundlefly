@@ -33,8 +33,18 @@
 
 #import <UIKit/UIKit.h>
 
-extern NSString const * BFLServiceNameSettingsKey;
+@interface BFLTextFieldTableViewCell : UITableViewCell
 
-@interface BFLSettingsViewController : UITableViewController
+@property (nonatomic, strong, readonly) UITextField *textField;
+
+@end
+
+@interface BFLSwitchTableViewCell : UITableViewCell
+
+@property (nonatomic, strong, readonly) UISwitch *switchControl;
+
+@end
+
+@interface BFLSettingsViewController : UITableViewController<UITextFieldDelegate>
 
 @end

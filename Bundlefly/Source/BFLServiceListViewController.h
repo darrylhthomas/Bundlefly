@@ -33,6 +33,22 @@
 
 #import <UIKit/UIKit.h>
 
-@interface BFLServiceListViewController : UITableViewController
+@class BFLFileSystemNodeReconciliationResult;
 
+@protocol BFLServiceListViewControllerDelegate;
+
+@interface BFLServiceListViewController : UITableViewController<NSNetServiceBrowserDelegate, NSNetServiceDelegate>
+
+@property (nonatomic, weak) id<BFLServiceListViewControllerDelegate> delegate;
+@property (nonatomic, copy) NSString *serviceType;
+
+- (void)setReconciliationResult:(BFLFileSystemNodeReconciliationResult *)result forNetService:(NSNetService *)service;
+- (void)setReconciliationResult:(BFLFileSystemNodeReconciliationResult *)result forNetServiceWithName:(NSString *)name;
+
+@end
+
+@protocol BFLServiceListViewControllerDelegate <NSObject>
+@optional
+- (void)serviceListViewController:(BFLServiceListViewController *)controller didResolveService:(NSNetService *)service toURL:(NSURL *)url;
+- (void)serviceListViewController:(BFLServiceListViewController *)controller syncWasRequestedForService:(NSNetService *)service;
 @end

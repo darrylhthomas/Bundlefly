@@ -32,7 +32,19 @@
 // the use of runtime hacks and should be considered very fragile.
 
 #import <UIKit/UIKit.h>
+#import "BFLServiceListViewController.h"
+#import "BFLBundlesViewController.h"
+#import "BFLSettingsViewController.h"
 
-@interface BFLBundleflyController : UITabBarController
+extern NSString const * BFLBundleflyControllerDidChangeBundleContentsNotification;
+
+extern NSString const * BFLServiceTypeSettingsKey;
+
+@interface BFLBundleflyController : UITabBarController<BFLServiceListViewControllerDelegate,BFLBundlesViewControllerDelegate, UIGestureRecognizerDelegate, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate, NSNetServiceBrowserDelegate, NSNetServiceDelegate>
+
++ (BFLBundleflyController *)sharedController;
+
+- (void)attachToViewController:(UIViewController *)controller;
+- (void)attachToViewController:(UIViewController *)controller addingGestureRecognizerToView:(UIView *)view;
 
 @end

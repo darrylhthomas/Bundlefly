@@ -1,5 +1,5 @@
 //
-//  BFLBundlesViewController.h
+//  BFLBundleTableViewCell.h
 //  Bundlefly
 //
 //  Created by Darryl H. Thomas on 3/13/13.
@@ -33,22 +33,10 @@
 
 #import <UIKit/UIKit.h>
 
-@protocol BFLBundlesViewControllerDelegate;
+@interface BFLBundleTableViewCell : UITableViewCell
 
-@interface BFLBundlesViewController : UITableViewController
-
-@property (nonatomic, copy) NSString *selectedBundleName;
-@property (nonatomic, copy) NSArray *bundles;
-@property (nonatomic, weak) id<BFLBundlesViewControllerDelegate> delegate;
-
-- (void)addBundle:(NSDictionary *)bundle;
-- (void)removeBundle:(NSDictionary *)bundle;
-
-@end
-
-@protocol BFLBundlesViewControllerDelegate <NSObject>
-
-- (void)bundlesViewController:(BFLBundlesViewController *)controller didSelectBundleWithName:(NSString *)bundleName;
-- (void)bundlesViewcontroller:(BFLBundlesViewController *)controller didDeleteBundleWithName:(NSString *)bundleName;
+- (void)showActivityIndicator;
+- (void)hideActivityIndicator;
+- (void)setStatusImage:(UIImage *)image;
 
 @end

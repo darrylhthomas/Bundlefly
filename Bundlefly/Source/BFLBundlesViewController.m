@@ -32,115 +32,220 @@
 // the use of runtime hacks and should be considered very fragile.
 
 #import "BFLBundlesViewController.h"
-
-@interface BFLBundlesViewController ()
-
-@end
+#import "BFLBundleTableViewCell.h"
+#import "BFLFileSystemNode.h"
 
 @implementation BFLBundlesViewController
+{
+    NSMutableArray *_bundles;
+}
+
+@dynamic bundles;
+
++ (NSString *)displayNameForBundleName:(NSString *)bundleName
+{
+    NSArray *components = [bundleName componentsSeparatedByString:@":"];
+    NSString *name = components[0];
+    if ([components count] > 1) {
+        NSArray *pathComponents = [components subarrayWithRange:NSMakeRange(1, [components count] - 1)];
+        name = [name stringByAppendingFormat:@":%@", [pathComponents componentsJoinedByString:@"/"]];
+    }
+    
+    return name;
+}
 
 - (id)initWithStyle:(UITableViewStyle)style
 {
     self = [super initWithStyle:style];
     if (self) {
-        // Custom initialization
+        self.tabBarItem = [[UITabBarItem alloc] initWithTabBarSystemItem:UITabBarSystemItemDownloads tag:1];
+        self.title = NSLocalizedString(@"Downloads", nil);
+        [self.tableView registerClass:[BFLBundleTableViewCell class] forCellReuseIdentifier:@"BundleCell"];
+        self.navigationItem.rightBarButtonItem = self.editButtonItem;
     }
     return self;
 }
 
-- (void)viewDidLoad
+- (void)sortBundles
 {
-    [super viewDidLoad];
-
-    // Uncomment the following line to preserve selection between presentations.
-    // self.clearsSelectionOnViewWillAppear = NO;
- 
-    // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
+    [_bundles sortUsingComparator:^NSComparisonResult(NSDictionary *obj1, NSDictionary *obj2) {
+        return [obj1[@"name"] localizedCaseInsensitiveCompare:obj2[@"name"]];
+    }];
 }
 
-- (void)didReceiveMemoryWarning
+- (NSIndexPath *)indexPathForBundleWithName:(NSString *)name
 {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+    if (!name)
+        return nil;
+    
+    NSInteger row = [_bundles indexOfObjectPassingTest:^BOOL(NSDictionary *bundle, NSUInteger idx, BOOL *stop) {
+        BOOL result = [bundle[@"name"] isEqualToString:name];
+        if (result)
+            *stop = YES;
+        
+        return result;
+    }];
+    
+    if (row == NSNotFound)
+        return nil;
+    
+    return [NSIndexPath indexPathForRow:row inSection:0];
+}
+
+- (void)setSelectedBundleName:(NSString *)selectedBundleName
+{
+    if ([selectedBundleName isEqualToString:_selectedBundleName])
+        return;
+    
+    NSIndexPath *currentSelectionIndexPath = [self indexPathForBundleWithName:_selectedBundleName];
+    NSIndexPath *newSelectionIndexPath = [self indexPathForBundleWithName:selectedBundleName];
+    
+    _selectedBundleName = [selectedBundleName copy];
+    
+    UITableView *tableView = self.tableView;
+    if (currentSelectionIndexPath) {
+        BFLBundleTableViewCell *cell = (BFLBundleTableViewCell *)[tableView cellForRowAtIndexPath:currentSelectionIndexPath];
+        cell.accessoryType = UITableViewCellAccessoryNone;
+    }
+    
+    if (newSelectionIndexPath) {
+        BFLBundleTableViewCell *cell = (BFLBundleTableViewCell *)[tableView cellForRowAtIndexPath:newSelectionIndexPath];
+        cell.accessoryType = UITableViewCellAccessoryCheckmark;
+    }
+}
+
+- (void)setBundles:(NSArray *)bundles
+{
+    _bundles = [bundles mutableCopy];
+    [self sortBundles];
+    [self.tableView reloadData];
+}
+
+- (NSArray *)bundles
+{
+    return [_bundles copy];
+}
+
+- (void)addBundle:(NSDictionary *)bundle
+{
+    NSInteger oldIndex = [_bundles indexOfObject:bundle];
+    if (oldIndex == NSNotFound) {
+        // It's possible the dictionary differs from the one we're storing even though it represents the same bundle, so search by name.
+        oldIndex = [_bundles indexOfObjectPassingTest:^BOOL(NSDictionary *object, NSUInteger idx, BOOL *stop) {
+            BOOL result = ([bundle[@"name"] isEqualToString:object[@"name"]]);
+            if (result)
+                *stop = YES;
+            
+            return result;
+        }];
+    }
+    
+    // If we already have the bundle, just bail
+    if (oldIndex != NSNotFound)
+        return;
+    
+    [_bundles addObject:bundle];
+    [self sortBundles];
+    NSInteger row = [_bundles indexOfObject:bundle];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
+    UITableView *tableView = self.tableView;
+    [tableView beginUpdates];
+    [tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    [tableView endUpdates];
+}
+
+- (void)removeBundle:(NSDictionary *)bundle
+{
+    NSInteger oldIndex = [_bundles indexOfObject:bundle];
+    if (oldIndex == NSNotFound) {
+        // It's possible the dictionary differs from the one we're storing even though it represents the same bundle, so search by name.
+        oldIndex = [_bundles indexOfObjectPassingTest:^BOOL(NSDictionary *object, NSUInteger idx, BOOL *stop) {
+            BOOL result = ([bundle[@"name"] isEqualToString:object[@"name"]]);
+            if (result)
+                *stop = YES;
+            
+            return result;
+        }];
+    }
+    
+    // If we still didn't find the bundle, just bail
+    if (oldIndex == NSNotFound)
+        return;
+    
+    if ([bundle[@"name"] isEqualToString:_selectedBundleName])
+        _selectedBundleName = nil;
+    
+    [_bundles removeObjectAtIndex:oldIndex];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:oldIndex inSection:0];
+    UITableView *tableView = self.tableView;
+    [tableView beginUpdates];
+    [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    [tableView endUpdates];
 }
 
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-#warning Potentially incomplete method implementation.
-    // Return the number of sections.
-    return 0;
+    return 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-#warning Incomplete method implementation.
-    // Return the number of rows in the section.
-    return 0;
+    return [_bundles count];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *CellIdentifier = @"Cell";
+    static NSString *CellIdentifier = @"BundleCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier forIndexPath:indexPath];
     
-    // Configure the cell...
+    NSDictionary *bundle = [_bundles objectAtIndex:indexPath.row];
+    NSString *bundleName = bundle[@"name"];
+    cell.imageView.image = [UIImage imageNamed:@"bundlefly_bundle_cell_image"];
+    cell.textLabel.text = [[self class] displayNameForBundleName:bundleName];
+    
+    if ([_selectedBundleName isEqualToString:bundleName]) {
+        cell.accessoryType = UITableViewCellAccessoryCheckmark;
+    } else {
+        cell.accessoryType = UITableViewCellAccessoryNone;
+    }
     
     return cell;
 }
 
-/*
-// Override to support conditional editing of the table view.
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    // Return NO if you do not want the specified item to be editable.
     return YES;
 }
-*/
 
-/*
-// Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        // Delete the row from the data source
+        NSDictionary *bundle = _bundles[indexPath.row];
+        NSString *bundleName = bundle[@"name"];
+        if ([_selectedBundleName isEqualToString:bundleName])
+            _selectedBundleName = nil;
+        
+        [_bundles removeObjectAtIndex:indexPath.row];
         [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-    }   
-    else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+        [self.delegate bundlesViewcontroller:self didDeleteBundleWithName:bundleName];
     }   
 }
-*/
-
-/*
-// Override to support rearranging the table view.
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
-{
-}
-*/
-
-/*
-// Override to support conditional rearranging of the table view.
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Return NO if you do not want the item to be re-orderable.
-    return YES;
-}
-*/
 
 #pragma mark - Table view delegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    // Navigation logic may go here. Create and push another view controller.
-    /*
-     <#DetailViewController#> *detailViewController = [[<#DetailViewController#> alloc] initWithNibName:@"<#Nib name#>" bundle:nil];
-     // ...
-     // Pass the selected object to the new view controller.
-     [self.navigationController pushViewController:detailViewController animated:YES];
-     */
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    
+    NSDictionary *bundle = [_bundles objectAtIndex:indexPath.row];
+    NSString *bundleName = bundle[@"name"];
+    
+    if ([bundleName isEqualToString:_selectedBundleName])
+        bundleName = nil;
+    
+    [self.delegate bundlesViewController:self didSelectBundleWithName:bundleName];
 }
 
 @end
